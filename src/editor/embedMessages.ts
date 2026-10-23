@@ -26,8 +26,22 @@ export function buildSavedMessage(): string {
  * Response to the editor's `configure` event. We disable XML compression so saved
  * diagrams are human-readable mxGraphModel XML (not a base64 blob).
  */
-export function buildConfigureMessage(): string {
-  return JSON.stringify({ action: 'configure', config: { compressXml: false } });
+export interface DefaultShapeStyle {
+  defaultShapeRounded?: boolean | null;
+  defaultShapeFillColor?: string;
+}
+
+export function buildConfigureMessage(style: DefaultShapeStyle = {}): string {
+  const defaultVertexStyle: Record<string, string> = {};
+  if (typeof style.defaultShapeRounded === 'boolean') {
+    defaultVertexStyle.rounded = style.defaultShapeRounded ? '1' : '0';
+  }
+  const fill = typeof style.defaultShapeFillColor === 'string' ? style.defaultShapeFillColor.trim() : '';
+  if (fill === 'none' || /^#[0-9a-fA-F]{6}$/.test(fill)) defaultVertexStyle.fillColor = fill;
+  return JSON.stringify({
+    action: 'configure',
+    config: { compressXml: false, ...(Object.keys(defaultVertexStyle).length ? { defaultVertexStyle } : {}) },
+  });
 }
 
 export function parseDrawioEvent(raw: unknown): DrawioEvent | null {

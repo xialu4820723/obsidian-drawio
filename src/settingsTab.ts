@@ -69,6 +69,34 @@ export class DrawioSettingTab extends PluginSettingTab {
       }
 
       new Setting(containerEl)
+        .setName('Default shape corners')
+        .setDesc('Applies to newly inserted shapes after reopening the editor. Existing shapes are unchanged.')
+        .addDropdown((d) => d
+          .addOption('inherit', 'Drawio default')
+          .addOption('rounded', 'Rounded')
+          .addOption('sharp', 'Sharp')
+          .setValue(s.defaultShapeRounded === null ? 'inherit' : s.defaultShapeRounded ? 'rounded' : 'sharp')
+          .onChange((v) => {
+            s.defaultShapeRounded = v === 'inherit' ? null : v === 'rounded';
+            save();
+          }));
+
+      new Setting(containerEl)
+        .setName('Default shape fill')
+        .setDesc('Use #RRGGBB (for example #F5F5F5) or none. Leave empty for the Drawio default. Reopen the editor to apply.')
+        .addText((t) => t
+          .setPlaceholder('#F5F5F5')
+          .setValue(s.defaultShapeFillColor)
+          .onChange((v) => {
+            const color = v.trim();
+            const valid = color === '' || color === 'none' || /^#[0-9a-fA-F]{6}$/.test(color);
+            t.inputEl.setCustomValidity(valid ? '' : 'Enter #RRGGBB, none, or leave empty.');
+            if (!valid) return;
+            s.defaultShapeFillColor = color;
+            save();
+          }));
+
+      new Setting(containerEl)
         .setName('New diagram location')
         .setDesc(
           'Where the command and the ribbon button create new diagrams. The folder context menu ' +

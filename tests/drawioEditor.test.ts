@@ -99,6 +99,34 @@ describe('DrawioEditor popout-window handling', () => {
   });
 });
 
+describe('persistent default shape styles', () => {
+  it('sends the configured defaults on each new editor instance', async () => {
+    for (let session = 0; session < 2; session++) {
+      const container = document.body.createDiv();
+      const editor = new DrawioEditor(container, fakeSource(), {
+        resolveBaseUrl: async () => 'http://127.0.0.1:1234/index.html',
+        isDark: () => false,
+        showLibraries: () => true,
+        acquireServer: () => {},
+        releaseServer: () => {},
+        defaultShapeStyle: { defaultShapeRounded: true, defaultShapeFillColor: '#F5F5F5' },
+      });
+      await editor.mount();
+      const iframe = container.querySelector('iframe')!;
+      const post = vi.spyOn(iframe.contentWindow!, 'postMessage');
+      window.dispatchEvent(new MessageEvent('message', {
+        source: iframe.contentWindow, origin: 'http://127.0.0.1:1234',
+        data: JSON.stringify({ event: 'configure' }),
+      }));
+      expect(JSON.parse(post.mock.calls[0]![0])).toMatchObject({
+        config: { defaultVertexStyle: { rounded: '1', fillColor: '#F5F5F5' } },
+      });
+      editor.destroy();
+      container.remove();
+    }
+  });
+});
+
 describe('DrawioEditor destroy/mount race', () => {
   it('does not acquire the server or create an iframe if destroy() runs while mount() is still awaiting resolveBaseUrl', async () => {
     const container = document.createElement('div');

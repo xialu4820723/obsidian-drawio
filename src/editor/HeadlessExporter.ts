@@ -56,7 +56,7 @@ export async function exportDiagramXml(
         if (!ev) return;
         switch (ev.event) {
           case 'configure':
-            post(buildConfigureMessage());
+            post(buildConfigureMessage(deps.defaultShapeStyle));
             break;
           case 'init':
             post(buildLoadMessage(xml, { dark: false }));

@@ -16,6 +16,9 @@ export interface DrawioSettings {
   serverIdleTimeout: number; // seconds
   followObsidianTheme: boolean;
   showLibraries: boolean;
+  /** null / empty string preserve drawio's built-in shape defaults. */
+  defaultShapeRounded: boolean | null;
+  defaultShapeFillColor: string;
   newDiagramLocation: NewDiagramLocation;
   /** Target folder for new diagrams when newDiagramLocation is 'folder'. */
   newDiagramFolder: string;
@@ -44,6 +47,8 @@ export const DEFAULT_SETTINGS: DrawioSettings = {
   serverIdleTimeout: 300,
   followObsidianTheme: true,
   showLibraries: true,
+  defaultShapeRounded: null,
+  defaultShapeFillColor: '',
   newDiagramLocation: 'root',
   newDiagramFolder: '',
   newDiagramFormat: 'drawio',

@@ -5,9 +5,35 @@ vi.mock('../src/desktop/registerDesktopFeatures', () => ({
   registerDesktopFeatures: vi.fn(async () => {}),
 }));
 
-import { maybeRegisterDesktopFeatures, setPreviewAlignmentClass } from '../src/main';
+import DrawioPlugin, { maybeRegisterDesktopFeatures, setPreviewAlignmentClass } from '../src/main';
+import { DEFAULT_SETTINGS } from '../src/settings';
 import { registerDesktopFeatures } from '../src/desktop/registerDesktopFeatures';
-import type DrawioPlugin from '../src/main';
+
+describe('persistent shape style settings', () => {
+  it('preserves Drawio defaults for existing installations', async () => {
+    const plugin = new DrawioPlugin({} as never, {} as never);
+    plugin.loadData = async () => ({ drawioMode: 'offline' });
+    await plugin.loadSettings();
+    expect(plugin.settings.defaultShapeRounded).toBeNull();
+    expect(plugin.settings.defaultShapeFillColor).toBe('');
+  });
+
+  it('loads saved defaults and forwards them to every editor surface', async () => {
+    const plugin = new DrawioPlugin({} as never, {} as never);
+    plugin.loadData = async () => ({
+      defaultShapeRounded: true, defaultShapeFillColor: '#F5F5F5',
+    });
+    await plugin.loadSettings();
+    expect(plugin.editorDeps().defaultShapeStyle).toEqual({
+      defaultShapeRounded: true, defaultShapeFillColor: '#F5F5F5',
+    });
+    const saved = vi.fn(async () => {});
+    plugin.saveData = saved;
+    await plugin.saveSettings();
+    expect(saved).toHaveBeenCalledWith({ ...DEFAULT_SETTINGS,
+      defaultShapeRounded: true, defaultShapeFillColor: '#F5F5F5' });
+  });
+});
 
 describe('maybeRegisterDesktopFeatures', () => {
   const originalIsDesktopApp = Platform.isDesktopApp;

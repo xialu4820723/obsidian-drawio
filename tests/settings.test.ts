@@ -44,6 +44,8 @@ describe('DEFAULT_SETTINGS', () => {
     expect(Object.keys(DEFAULT_SETTINGS).sort()).toEqual(
       [
         'customDrawioUrl',
+        'defaultShapeRounded',
+        'defaultShapeFillColor',
         'drawioMode',
         'editButtonAction',
         'followObsidianTheme',

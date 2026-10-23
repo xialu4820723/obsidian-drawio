@@ -26,6 +26,10 @@ Run in a desktop test vault after `npm run build` and copying the plugin (or sym
 - [ ] "Custom URL" mode loads the editor from the configured URL (e.g. https://embed.diagrams.net/).
 - [ ] Server idle timeout persists across reloads; values below 5 are rejected.
 
+- [ ] Default shape corners/fill persist after closing and reopening an editor and after plugin reload; a new diagram uses them too.
+- [ ] Inherit/empty restores Drawio defaults; already-saved shapes are unchanged. Database cylinders keep their native shape and text-only labels remain unfilled.
+- [ ] Dual-format SVG save contains the visible rounded/filled shapes and matching native model; plain export uses the same configuration.
+
 ## Server lifecycle
 - [ ] First edit lazily starts the local server (check the dev console / network).
 - [ ] The editor still opens if the first port in the range is occupied (auto-fallback).

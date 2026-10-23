@@ -90,7 +90,10 @@ export class DropdownComponent {
   }
   setValue(value: string): this { this.selectEl.value = value; return this; }
   setDisabled(disabled: boolean): this { this.selectEl.disabled = disabled; return this; }
-  onChange(_cb: (value: string) => void): this { return this; }
+  onChange(cb: (value: string) => void): this {
+    this.selectEl.addEventListener('change', () => cb(this.selectEl.value));
+    return this;
+  }
 }
 
 class ToggleComponent {
@@ -100,9 +103,13 @@ class ToggleComponent {
 
 class TextComponent {
   inputEl: HTMLInputElement = document.createElement('input');
-  setPlaceholder(_p: string): this { return this; }
-  setValue(_v: string): this { return this; }
-  onChange(_cb: (value: string) => void): this { return this; }
+  constructor(containerEl?: HTMLElement) { containerEl?.appendChild(this.inputEl); }
+  setPlaceholder(p: string): this { this.inputEl.placeholder = p; return this; }
+  setValue(v: string): this { this.inputEl.value = v; return this; }
+  onChange(cb: (value: string) => void): this {
+    this.inputEl.addEventListener('input', () => cb(this.inputEl.value));
+    return this;
+  }
 }
 
 export class ButtonComponent {
@@ -140,7 +147,7 @@ export class Setting {
     return this;
   }
   addToggle(cb: (t: ToggleComponent) => unknown): this { cb(new ToggleComponent()); return this; }
-  addText(cb: (t: TextComponent) => unknown): this { cb(new TextComponent()); return this; }
+  addText(cb: (t: TextComponent) => unknown): this { cb(new TextComponent(this.settingEl)); return this; }
   addButton(cb: (b: ButtonComponent) => unknown): this {
     const b = new ButtonComponent();
     this.settingEl.appendChild(b.buttonEl);

@@ -69,6 +69,20 @@ describe('exportDiagramXml (headless drawio export)', () => {
     await expect(promise).resolves.toBe(SVG_URI);
   });
 
+  it('uses the same configured shape defaults for image exports', async () => {
+    const deps = {
+      ...makeDeps(),
+      defaultShapeStyle: { defaultShapeRounded: true, defaultShapeFillColor: '#F5F5F5' },
+    };
+    const { promise, posts, dispatch } = await start('svg', deps);
+    dispatch({ event: 'configure' });
+    dispatch({ event: 'export', data: SVG_URI });
+    await promise;
+    expect(JSON.parse(posts[0]!)).toMatchObject({
+      config: { defaultVertexStyle: { rounded: '1', fillColor: '#F5F5F5' } },
+    });
+  });
+
   it('requests the png format for png exports', async () => {
     const deps = makeDeps();
     const { promise, posts, dispatch } = await start('png', deps);

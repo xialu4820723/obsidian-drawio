@@ -96,8 +96,12 @@ Phones and tablets behave identically: previews everywhere, no editing. Tapping 
 | **Preview alignment** | Center (default) or left-align rendered previews. |
 | **Follow Obsidian theme** | Match the editor to Obsidian's light/dark theme. |
 | **Show shape libraries** | Toggle the editor's shape panel. |
+| **Default shape corners** | Drawio default (unchanged), Rounded, or Sharp for newly inserted shapes. Reopen the editor to apply; existing shapes are not restyled. |
+| **Default shape fill** | `#RRGGBB` (for example `#F5F5F5`) or `none`. Leave empty to inherit Drawio's default. Saved per vault and applied on the next editor open. |
 | **Server idle timeout** | Stop the local server after this idle period (minimum 5 s). Only relevant in Offline mode. |
 | **Migrate from the old Diagrams plugin** | Desktop: **Scan vault…** lists ordinary `.svg` files with embedded drawio data and, after confirmation, renames them to `.drawio.svg`. |
+
+Shape-library entries with an explicit style keep it: **Rectangle** stays sharp and **Rounded Rectangle** stays rounded. These settings provide defaults, not a forced restyle of every shape. Text-only labels and existing diagrams keep their own appearance.
 
 On mobile, only **Preview alignment** and **Follow Obsidian theme** are shown — the other settings configure the desktop editor.
 

@@ -3,6 +3,7 @@ import { DrawioSource, isExportingSource } from '../model/DrawioSource';
 import {
   buildLoadMessage, buildConfigureMessage, buildExportMessage, buildSavedMessage, parseDrawioEvent,
 } from './embedMessages';
+import type { DefaultShapeStyle } from './embedMessages';
 import { buildEmbedQuery } from '../constants';
 
 export interface DrawioEditorDeps {
@@ -11,6 +12,8 @@ export interface DrawioEditorDeps {
   isDark(): boolean;
   showLibraries(): boolean;
   pngExportScale?(): number;
+  /** Persisted defaults for shapes inserted in a newly opened editor. */
+  defaultShapeStyle?: DefaultShapeStyle;
   /** Pin/unpin the local server so it isn't idle-stopped while editing. */
   acquireServer(): void;
   releaseServer(): void;
@@ -117,7 +120,7 @@ export class DrawioEditor {
     switch (ev.event) {
       case 'configure':
         // Sent before init when configure=1. Disable compression → readable XML.
-        this.post(buildConfigureMessage());
+        this.post(buildConfigureMessage(this.deps.defaultShapeStyle));
         break;
       case 'init': {
         let xml: string;

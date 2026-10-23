@@ -17,8 +17,38 @@ describe('embedMessages', () => {
     expect(msg).toEqual({ action: 'configure', config: { compressXml: false } });
   });
 
+  it('forwards persistent rounded corners and fill without changing compression', () => {
+    const msg = JSON.parse(buildConfigureMessage({
+      defaultShapeRounded: true, defaultShapeFillColor: '#F5F5F5',
+    }));
+    expect(msg).toEqual({
+      action: 'configure',
+      config: { compressXml: false, defaultVertexStyle: { rounded: '1', fillColor: '#F5F5F5' } },
+    });
+  });
+
   it('parses an init event', () => {
     expect(parseDrawioEvent(JSON.stringify({ event: 'init' }))).toEqual({ event: 'init' });
+  });
+
+  it('supports sharp corners independently and leaves unconfigured styles inherited', () => {
+    expect(JSON.parse(buildConfigureMessage({ defaultShapeRounded: false }))).toEqual({
+      action: 'configure', config: { compressXml: false, defaultVertexStyle: { rounded: '0' } },
+    });
+    expect(JSON.parse(buildConfigureMessage({ defaultShapeRounded: null, defaultShapeFillColor: '' })))
+      .toEqual(JSON.parse(buildConfigureMessage()));
+  });
+
+  it('ignores invalid persisted fill values instead of forwarding arbitrary CSS', () => {
+    expect(JSON.parse(buildConfigureMessage({ defaultShapeFillColor: 'url(https://example.com)' })))
+      .toEqual(JSON.parse(buildConfigureMessage()));
+  });
+
+  it('allows a transparent fill and trims a valid persisted color', () => {
+    expect(JSON.parse(buildConfigureMessage({ defaultShapeFillColor: 'none' })).config.defaultVertexStyle)
+      .toEqual({ fillColor: 'none' });
+    expect(JSON.parse(buildConfigureMessage({ defaultShapeFillColor: ' #F5F5F5 ' })).config.defaultVertexStyle)
+      .toEqual({ fillColor: '#F5F5F5' });
   });
 
   it('parses a save event with xml', () => {

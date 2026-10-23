@@ -157,6 +157,10 @@ export default class DrawioPlugin extends Plugin {
       isDark: () => this.settings.followObsidianTheme && this.isDark(),
       showLibraries: () => this.settings.showLibraries,
       pngExportScale: () => this.settings.pngExportScale,
+      defaultShapeStyle: {
+        defaultShapeRounded: this.settings.defaultShapeRounded,
+        defaultShapeFillColor: this.settings.defaultShapeFillColor,
+      },
       acquireServer: () => this.server!.acquire(),
       releaseServer: () => this.server!.release(),
     };

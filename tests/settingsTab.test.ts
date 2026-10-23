@@ -66,6 +66,42 @@ describe('DrawioSettingTab', () => {
     expect(inlineRow.querySelectorAll('option')).toHaveLength(1);
   });
 
+  it('saves shape defaults with an explicit inherit option and validates fill colors', () => {
+    Platform.isDesktopApp = true;
+    const saveSettings = vi.fn(async () => {});
+    const plugin = fakePlugin({ saveSettings });
+    const tab = new DrawioSettingTab({} as never, plugin);
+    tab.display();
+    const row = (name: string) => Array.from(tab.containerEl.querySelectorAll('.setting-item'))
+      .find((el) => el.querySelector('.setting-item-name')?.textContent === name)!;
+    const corners = row('Default shape corners').querySelector('select')!;
+    expect(corners.value).toBe('inherit');
+    corners.value = 'rounded';
+    corners.dispatchEvent(new Event('change'));
+    expect(plugin.settings.defaultShapeRounded).toBe(true);
+    corners.value = 'sharp';
+    corners.dispatchEvent(new Event('change'));
+    expect(plugin.settings.defaultShapeRounded).toBe(false);
+    corners.value = 'inherit';
+    corners.dispatchEvent(new Event('change'));
+    expect(plugin.settings.defaultShapeRounded).toBeNull();
+    const fill = row('Default shape fill').querySelector('input')!;
+    fill.value = '#f5f5f5';
+    fill.dispatchEvent(new Event('input'));
+    expect(plugin.settings.defaultShapeFillColor).toBe('#f5f5f5');
+    expect(saveSettings).toHaveBeenCalledTimes(4);
+    fill.value = 'url(https://example.com)';
+    fill.dispatchEvent(new Event('input'));
+    expect(fill.validity.valid).toBe(false);
+    expect(plugin.settings.defaultShapeFillColor).toBe('#f5f5f5');
+    expect(saveSettings).toHaveBeenCalledTimes(4);
+    fill.value = '';
+    fill.dispatchEvent(new Event('input'));
+    expect(fill.validity.valid).toBe(true);
+    expect(plugin.settings.defaultShapeFillColor).toBe('');
+    expect(saveSettings).toHaveBeenCalledTimes(5);
+  });
+
   it('hides the editor-only rows on mobile, keeps preview/theme rows', () => {
     Platform.isDesktopApp = false;
     const tab = new DrawioSettingTab({} as never, fakePlugin());
@@ -75,6 +111,8 @@ describe('DrawioSettingTab', () => {
     expect(names).not.toContain('Custom drawio URL');
     expect(names).not.toContain('Server idle timeout (seconds)');
     expect(names).not.toContain('Show shape libraries');
+    expect(names).not.toContain('Default shape corners');
+    expect(names).not.toContain('Default shape fill');
     expect(names).not.toContain('New diagram location');
     expect(names).not.toContain('New diagram folder');
     expect(names).not.toContain('Open diagram files read-only');
