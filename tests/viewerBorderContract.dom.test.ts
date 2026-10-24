@@ -13,11 +13,11 @@ import {
  * derived from, by measuring them off the REAL vendored viewer:
  *
  *   1. it insets the diagram by an 8px border;
- *   2. it sizes the SVG as `bounds + 25` (via `min-width`/`min-height`);
+ *   2. it sizes the SVG as `bounds + 17` (via `min-width`/`min-height`);
  *   3. it half-pixel-aligns shapes (`translate(0.5,0.5)`).
  *
- * Because 25 > 2*8, the right/bottom margins end up wider than the left/top
- * ones and the diagram sits off-centre; the shift is half that surplus. The
+ * The padding includes the two borders and half-pixel alignment, leaving
+ * equal margins and requiring no additional centering shift. The
  * final assertion closes the loop — it recomputes the shift from the measured
  * numbers and compares it against the shipped constant, so a drawio bump that
  * moves ANY of the three fails here.
@@ -27,9 +27,8 @@ import {
  * other suites that need the vendored blob.
  *
  * jsdom has no layout engine, but none is required: GraphViewer bakes the
- * border straight into the shape's own coordinates there (rather than the root
- * <g> transform it emits in a real browser), and both routes put the shape in
- * the same place — so the constants are readable as plain attributes.
+ * border into an ancestor translation; the test combines that translation
+ * with the shape coordinates to measure the effective border.
  */
 const viewerPath = join(process.cwd(), 'src/preview/viewer.min.txt');
 const hasViewer = existsSync(viewerPath);
@@ -79,8 +78,8 @@ describe.skipIf(!hasViewer)('GraphViewer border/size contract', () => {
 
   it('insets the diagram by the border', () => {
     expect(shape, 'no rect matching the vertex geometry').toBeTruthy();
-    expect(Number(shape.getAttribute('x'))).toBe(VIEWER_BORDER);
-    expect(Number(shape.getAttribute('y'))).toBe(VIEWER_BORDER);
+    expect(borderOffset('x')).toBe(VIEWER_BORDER);
+    expect(borderOffset('y')).toBe(VIEWER_BORDER);
   });
 
   it('sizes the svg as bounds plus the padding', () => {
@@ -94,13 +93,26 @@ describe.skipIf(!hasViewer)('GraphViewer border/size contract', () => {
 
   // The loop-closing check: derive the shift from what was just measured.
   it('agrees with the shipped centering shift', () => {
-    const border = Number(shape.getAttribute('x'));
+    const border = borderOffset('x');
     const padding = parseFloat(svg.style.minWidth) - GEOM.w;
     const align = halfPixelOffset();
     const left = border + align;
     const right = padding - border - align;
     expect(VIEWBOX_CENTERING_SHIFT).toBe((right - left) / 2);
   });
+
+  // 32.6.1 leaves geometry in model coordinates and applies the border via
+  // an ancestor translation; earlier versions baked it into rect attributes.
+  function borderOffset(axis: 'x' | 'y'): number {
+    let value = Number(shape.getAttribute(axis));
+    for (let node = shape.parentElement; node && (node as Element) !== svg; node = node.parentElement) {
+      const transform = node.getAttribute('transform') ?? '';
+      if (transform === 'translate(0.5,0.5)') continue;
+      const match = /^translate\(\s*(-?[\d.]+)\s*,\s*(-?[\d.]+)\s*\)/.exec(transform);
+      if (match) value += Number(match[axis === 'x' ? 1 : 2]);
+    }
+    return value;
+  }
 
   /** The `translate(0.5,0.5)` GraphViewer wraps shapes in, or 0 if it stops. */
   function halfPixelOffset(): number {

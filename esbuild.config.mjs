@@ -11,12 +11,8 @@ ${drawioLicense}
 */`;
 const prod = process.argv[2] === 'production';
 
-// The vendored drawio viewer carries createElement("script") call sites that
-// trip the plugin-review scanner. The scrub lives in scripts/sanitize-viewer.mjs
-// — shared with tests/sanitizeViewer.test.ts so the tested transform is exactly
-// the shipped one — keeping the committed viewer.min.txt a pristine copy of
-// upstream. It throws (failing the build loudly) whenever the minified shape
-// drifts from the pinned snippets.
+// Keep viewer.min.txt pristine. The helper replaces only the reviewed offline
+// MathJax loader and interactive SVG export method, with fail-closed guards.
 const sanitizeDrawioViewerPlugin = {
   name: 'sanitize-drawio-viewer',
   setup(build) {

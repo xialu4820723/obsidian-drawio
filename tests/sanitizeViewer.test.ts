@@ -22,8 +22,8 @@ describe.skipIf(!hasViewer)('build-time viewer sanitization', () => {
     expect(sanitized).not.toContain("createElement('script')");
   });
 
-  it('collapses the SVG icon-script ternary to the namespaced branch', () => {
-    expect(sanitized).toContain('k=f.createElementNS(mxConstants.NS_SVG,"script")');
+  it('removes unused interactive SVG script generation', () => {
+    expect(sanitized).toContain('EditorUi.prototype.addSvgIconHandlers=function(){};');
   });
 
   it('still parses as JavaScript', () => {
