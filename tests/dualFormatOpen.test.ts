@@ -2,7 +2,7 @@ import { describe, it, expect, vi, afterEach } from 'vitest';
 import { Platform, TFile } from 'obsidian';
 import { DualFormatFileSource } from '../src/file/DualFormatFileSource';
 import {
-  handleDualFormatEmbedClick, syncDualFormatEditAction,
+  handleDualFormatEmbedClick, syncDualFormatEditAction, registerDualFormatOpen,
 } from '../src/desktop/dualFormatOpen';
 import type DrawioPlugin from '../src/main';
 import type { PreviewClickAction } from '../src/settings';
@@ -69,6 +69,51 @@ describe('handleDualFormatEmbedClick', () => {
     const { event } = clickOnEmbed('diagram.drawio.svg', true);
     expect(handleDualFormatEmbedClick(plugin, event)).toBe(false);
     expect(openEditor).not.toHaveBeenCalled();
+  });
+
+  it('leaves native resize and embed-action controls alone', () => {
+    const { plugin, openEditor } = pluginWith();
+    for (const cls of ['image-resize-corner', 'embed-action']) {
+      const { span } = clickOnEmbed('diagram.drawio.svg');
+      const control = document.createElement('div');
+      control.className = cls;
+      span.appendChild(control);
+      const event = new MouseEvent('click', { bubbles: true, cancelable: true });
+      Object.defineProperty(event, 'target', { value: control });
+      expect(handleDualFormatEmbedClick(plugin, event)).toBe(false);
+    }
+    expect(openEditor).not.toHaveBeenCalled();
+  });
+
+  it.each([false, true])('does not open on a click retargeted after native image resize (Reading view: %s)', (decorated) => {
+    const { plugin, openEditor } = pluginWith();
+    const cleanups: Array<() => void> = [];
+    Object.assign(plugin, {
+      registerDomEvent: (doc: Document, type: string, cb: EventListener, opts: AddEventListenerOptions) => {
+        doc.addEventListener(type, cb, opts);
+        cleanups.push(() => doc.removeEventListener(type, cb, opts));
+      },
+      registerEvent: vi.fn(),
+    });
+    Object.assign(plugin.app.workspace, { on: vi.fn(), iterateAllLeaves: vi.fn() });
+    try {
+      registerDualFormatOpen(plugin);
+      const { span } = clickOnEmbed('diagram.drawio.svg', decorated);
+      if (decorated) span.addEventListener('click', () => openEditor());
+      const handle = document.createElement('div');
+      handle.className = 'image-resize-corner';
+      span.appendChild(handle);
+      handle.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true }));
+      span.dispatchEvent(new MouseEvent('pointerup', { bubbles: true }));
+      span.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+      expect(openEditor).not.toHaveBeenCalled();
+      const img = span.querySelector('img')!;
+      img.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true }));
+      img.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+      expect(openEditor).toHaveBeenCalledTimes(1);
+    } finally {
+      cleanups.forEach(cleanup => cleanup());
+    }
   });
 
   it('ignores ordinary image embeds', () => {
