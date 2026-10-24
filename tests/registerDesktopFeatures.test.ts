@@ -6,6 +6,7 @@ vi.mock('obsidian', async (importOriginal) => {
 });
 
 import { FileSystemAdapter, Notice, TFile } from 'obsidian';
+import type { Editor, MarkdownFileInfo } from 'obsidian';
 import { registerDesktopFeatures } from '../src/desktop/registerDesktopFeatures';
 import { DRAWIO_VERSION } from '../src/constants';
 import type DrawioPlugin from '../src/main';
@@ -69,6 +70,7 @@ interface RegisteredCommand {
   id: string;
   name: string;
   checkCallback?: (checking: boolean) => boolean;
+  editorCheckCallback?: (checking: boolean, editor: Editor, ctx: MarkdownFileInfo) => boolean | void;
 }
 
 function registeredCommand(raw: { addCommand: ReturnType<typeof vi.fn> }, id: string) {
@@ -107,6 +109,46 @@ describe('registerDesktopFeatures', () => {
     expect(raw.addCommand).toHaveBeenCalledWith(
       expect.objectContaining({ id: 'create-drawio-file', name: 'Create new diagram' }),
     );
+  });
+
+  it('registers Create and insert diagram as an editor-only command', async () => {
+    const { plugin, raw } = fakePlugin();
+    await registerDesktopFeatures(plugin);
+    const command = registeredCommand(raw, 'create-and-insert-drawio-file');
+    expect(command.name).toBe('Create and insert diagram');
+    expect(command.checkCallback).toBeUndefined();
+    expect(command.editorCheckCallback).toBeTypeOf('function');
+
+    const editor = {} as Editor;
+    const check = command.editorCheckCallback!;
+    expect(check(true, editor, { file: null } as MarkdownFileInfo)).toBe(false);
+    expect(check(true, editor, { file: tfile('image.drawio.svg') } as MarkdownFileInfo)).toBe(false);
+    expect(check(true, editor, { file: tfile('note.md') } as MarkdownFileInfo)).toBe(true);
+    // Availability checks must not create a file or read the cursor.
+    expect(raw.app.workspace.getActiveFile).not.toHaveBeenCalled();
+
+    const events: string[] = [];
+    const file = tfile('Untitled Diagram 123.drawio');
+    const create = vi.fn(async () => { events.push('create'); return file; });
+    const openFile = vi.fn(async () => { events.push('open'); });
+    const generateMarkdownLink = vi.fn(() => `[[${file.path}]]`);
+    Object.assign(raw.settings, {
+      newDiagramLocation: 'root', newDiagramFormat: 'drawio',
+    });
+    Object.assign(raw.app.vault, { create });
+    Object.assign(raw.app, { fileManager: { generateMarkdownLink } });
+    Object.assign(raw.app.workspace, { getLeaf: () => ({ openFile }) });
+    const replaceRange = vi.fn(() => { events.push('insert'); });
+    const sourceEditor = {
+      getCursor: vi.fn(() => ({ line: 2, ch: 4 })), replaceRange,
+    } as unknown as Editor;
+    const note = tfile('Notes/note.md');
+    check(false, sourceEditor, { file: note, editor: sourceEditor } as MarkdownFileInfo);
+    await vi.waitFor(() => expect(openFile).toHaveBeenCalledWith(file));
+    expect(generateMarkdownLink).toHaveBeenCalledWith(file, note.path);
+    expect(sourceEditor.getCursor).toHaveBeenCalledWith('to');
+    expect(replaceRange).toHaveBeenCalledWith(`\n![[${file.path}]]\n`, { line: 2, ch: 4 });
+    expect(events).toEqual(['create', 'insert', 'open']);
   });
 
   it('adds the ribbon icon', async () => {

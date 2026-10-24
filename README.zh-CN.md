@@ -37,10 +37,14 @@
 | --- | --- | --- |
 | **代码块** | 在任意笔记中添加 `` ```drawio `` 代码块（可留空，或粘贴 drawio XML） | 点击预览（见 **Preview click action**；默认：全屏编辑器） |
 | **`.drawio` 文件** | 侧边栏按钮 / **Create new diagram** 命令 / 文件夹右键菜单 | 编辑器直接嵌入文件的标签页 |
-| **嵌入** | 在任意笔记中写 `![[your-diagram.drawio]]` | 点击预览（见 **Preview click action**；默认：快速编辑模态框） |
+| **嵌入** | 在 Markdown 编辑器中运行 **Create and insert diagram**，或在任意笔记中写 `![[your-diagram.drawio]]` | 点击预览（见 **Preview click action**；默认：快速编辑模态框） |
 | **`.drawio.svg` / `.drawio.png` 文件** | 同样的入口，先设置 **New diagram format** | 点击嵌入、图片页签上的 **Edit**，或右键 → **Edit drawio diagram** |
 
 代码块和 `.drawio` 嵌入在编辑视图和阅读视图中渲染为 SVG 预览。双格式文件显示为原生图片。每次编辑都会自动保存回其源头 —— 代码块的 XML 或图表文件。有对应文件的嵌入会在底层文件变化时自动重新渲染。
+
+双格式 SVG/PNG 图片保存后原地刷新，无需切换笔记。原生图片缩放手柄和操作按钮不会打开图表编辑器；拖动调整显示大小与点击图片编辑互不干扰。
+
+**直接在笔记中创建（桌面端）：** 在 Markdown 编辑器中运行 **Create and insert diagram**。它遵循 **New diagram location** 和 **New diagram format**，先在光标处插入嵌入（有选区时插在选区末端，不替换选中文字），再打开图表编辑器。链接遵循 Obsidian 的链接设置；即使直接关闭图表编辑器而不作修改，嵌入仍留在笔记中。在笔记中撤销可移除本次插入，图表文件仍保留。**Create new diagram**、侧边栏按钮和文件夹菜单仍只创建独立文件，不向笔记插入任何内容。
 
 **点击预览（桌面端）：** **设置 → Drawio → Preview click action** 决定点击预览时发生什么：
 

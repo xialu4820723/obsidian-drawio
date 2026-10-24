@@ -11,13 +11,24 @@ Run in a desktop test vault after `npm run build` and copying the plugin (or sym
 - [ ] Two drawio blocks in one note edit independently (editing one doesn't corrupt the other).
 
 ## Files
-- [ ] "Create new drawio diagram" command creates and opens a `.drawio` file in the custom view.
+- [ ] **Create new diagram**, the ribbon button and folder menu create/open a standalone diagram without editing the active note.
 - [ ] Opening an existing `.drawio` file uses the custom view (preview + Edit), not plain text.
 - [ ] Edit → Save persists to the file; the preview updates.
 
+## Create and insert diagram (desktop)
+- [ ] **Create and insert diagram** is available in a Markdown editor, not Reading view, an image/diagram tab or an empty workspace.
+- [ ] For each **New diagram format** (`.drawio`, `.drawio.svg`, `.drawio.png`), the file is created and its embed appears in the source note before its editor opens. Close the editor without editing: the embed remains and resolves to the created file.
+- [ ] **New diagram location** respects vault root, the source note's folder and a fixed nested folder (created if missing).
+- [ ] At a cursor in text, and with a forward/backward selection, surrounding and selected text remain intact. The embed is inserted at the cursor/selection end on its own line. Undo in the note removes the insertion but keeps the file; redo restores the embed.
+- [ ] With Wikilinks on/off and different **New link format** settings, the generated embed resolves correctly, including paths with spaces.
+- [ ] If another Markdown pane becomes active while file creation is pending, only the initiating editor is changed, at its captured cursor. If the initiating pane is reused for a different note, neither that note nor the new active note is edited; a notice gives the created file's path.
+- [ ] A failed file/folder creation leaves the note untouched; an editor-open failure after successful insertion does not remove the embed.
+
 ## Embeds
 - [ ] `![[x.drawio]]` shows a preview in reading mode; clicking it opens the editor.
-- [ ] Editing an embed saves to the underlying file; the embed updates after the note re-renders.
+- [ ] Editing an embed saves to the underlying file; the embed updates without switching notes.
+- [ ] Dual-format SVG/PNG embeds refresh after saves in Live Preview and Reading view, including a popout; unrelated images, note selection and scroll remain unchanged. A standalone native image tab showing the same file refreshes too.
+- [ ] Drag a dual-format image's native bottom-right resize corner and release over the image: sizing still works and no editor opens. A subsequent ordinary image click still opens the editor; native embed action buttons keep their own behavior.
 
 ## Settings / theming
 - [ ] Switching Obsidian dark/light updates the editor theme on the next editor open.
