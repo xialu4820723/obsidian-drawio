@@ -37,9 +37,10 @@ export const EMPTY_DIAGRAM =
 
 /** drawio embed iframe URL query params. `configure=1` lets us disable XML
  *  compression so saved diagrams are readable (and code blocks are formattable). */
-export function buildEmbedQuery(opts: { dark: boolean; libraries: boolean }): string {
+export function buildEmbedQuery(opts: { dark: boolean; libraries: boolean; commonLibrary?: boolean }): string {
   const p = new URLSearchParams({ embed: '1', proto: 'json', spin: '1', configure: '1' });
   if (opts.libraries) p.set('libraries', '1');
   if (opts.dark) p.set('dark', '1');
+  if (opts.commonLibrary) p.set('libs', 'obsidian-common');
   return p.toString();
 }

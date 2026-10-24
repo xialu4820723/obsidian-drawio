@@ -69,6 +69,18 @@ export class DrawioSettingTab extends PluginSettingTab {
       }
 
       new Setting(containerEl)
+        .setName('Common shape library')
+        .setDesc(
+          'Vault-relative native library .xml path, re-read each time you open an editor. ' +
+          'Leave empty for native libraries. Offline mode only; ignored in Online and Custom modes ' +
+          'so private library content is not sent to another origin.',
+        )
+        .addText((t) => t
+          .setPlaceholder('tools/DrawIO/Common.xml')
+          .setValue(s.commonLibraryPath)
+          .onChange((v) => { s.commonLibraryPath = v; save(); }));
+
+      new Setting(containerEl)
         .setName('Default shape corners')
         .setDesc('Applies to newly inserted shapes after reopening the editor. Existing shapes are unchanged.')
         .addDropdown((d) => d

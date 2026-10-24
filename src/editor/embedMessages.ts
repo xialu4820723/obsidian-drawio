@@ -1,3 +1,5 @@
+import type { NativeLibraryEntry } from '../model/commonLibrary';
+
 export type DrawioEvent =
   | { event: 'init' }
   | { event: 'load'; [k: string]: unknown }
@@ -31,7 +33,7 @@ export interface DefaultShapeStyle {
   defaultShapeFillColor?: string;
 }
 
-export function buildConfigureMessage(style: DefaultShapeStyle = {}): string {
+export function buildConfigureMessage(style: DefaultShapeStyle = {}, commonLibrary?: NativeLibraryEntry[] | null): string {
   const defaultVertexStyle: Record<string, string> = {};
   if (typeof style.defaultShapeRounded === 'boolean') {
     defaultVertexStyle.rounded = style.defaultShapeRounded ? '1' : '0';
@@ -40,7 +42,17 @@ export function buildConfigureMessage(style: DefaultShapeStyle = {}): string {
   if (fill === 'none' || /^#[0-9a-fA-F]{6}$/.test(fill)) defaultVertexStyle.fillColor = fill;
   return JSON.stringify({
     action: 'configure',
-    config: { compressXml: false, ...(Object.keys(defaultVertexStyle).length ? { defaultVertexStyle } : {}) },
+    config: {
+      compressXml: false,
+      ...(Object.keys(defaultVertexStyle).length ? { defaultVertexStyle } : {}),
+      ...(commonLibrary?.length ? {
+        defaultLibraries: 'obsidian-common',
+        libraries: [{ title: { main: '常用' }, entries: [{
+          id: 'obsidian-common', title: { main: '常用' },
+          libs: [{ title: { main: '常用' }, data: commonLibrary }],
+        }] }],
+      } : {}),
+    },
   });
 }
 

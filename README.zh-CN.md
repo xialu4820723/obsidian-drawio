@@ -96,12 +96,15 @@
 | **Preview alignment**（预览对齐） | 渲染的预览居中（默认）或左对齐。 |
 | **Follow Obsidian theme**（跟随 Obsidian 主题） | 让编辑器匹配 Obsidian 的亮色/暗色主题。 |
 | **Show shape libraries**（显示形状库） | 切换编辑器的形状面板。 |
+| **Common shape library**（常用组件库） | 仅桌面端 Offline 模式：原生 `<mxlibrary>` `.xml` 文件的 Vault 相对路径（例如 `tools/DrawIO/Common.xml`）。每次打开编辑器时重新读取。留空恢复原生库选择；Online 和 Custom 模式忽略此项，避免将私有组件库内容传给其他来源。 |
 | **Default shape corners**（默认图形圆角） | 新插入图形使用 Drawio 默认（不覆盖）、Rounded（圆角）或 Sharp（直角）。重新打开编辑器后生效，不修改已有图形。 |
 | **Default shape fill**（默认图形填色） | 输入 `#RRGGBB`（例如 `#F5F5F5`）或 `none`。留空沿用 Drawio 默认。按库保存，下次打开编辑器时生效。 |
 | **Server idle timeout**（服务器空闲超时） | 空闲达到此时长后停止本地服务器（最小 5 秒）。仅在 Offline 模式下有意义。 |
 | **Migrate from the old Diagrams plugin**（从旧版 Diagrams 插件迁移） | 桌面端：**Scan vault…** 会列出带内嵌 drawio 数据的普通 `.svg`，确认后改名为 `.drawio.svg`。 |
 
 形状库中明确指定样式的图形仍保留该样式：**Rectangle** 保持直角，**Rounded Rectangle** 保持圆角。这些设置提供默认值，不强制重设所有图形；纯文字标签和已有图纸保留自身外观。
+
+有效的 **Common shape library** 会让新打开的离线编辑器选用已注册的**常用**面板；若面板折叠，点击标题展开。原生 **Scratchpad**、浏览器偏好和 **More Shapes** 仍可使用，不限制完整组件目录。文件保存所选组件及其样式，并不是对已有图纸生效的全局主题。文件不存在或格式无效时会提示，并回退到原生库。注册的面板不会把编辑写回 Vault 文件：请使用 Drawio 原生库编辑、导出功能替换该 XML，再重新打开编辑器加载修改。无界面的图片导出不读取组件库。
 
 在移动端只显示 **Preview alignment** 和 **Follow Obsidian theme** —— 其余设置项配置的是桌面编辑器。
 

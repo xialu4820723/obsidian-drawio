@@ -5,6 +5,7 @@ import {
 } from './embedMessages';
 import type { DefaultShapeStyle } from './embedMessages';
 import { buildEmbedQuery } from '../constants';
+import type { NativeLibraryEntry } from '../model/commonLibrary';
 
 export interface DrawioEditorDeps {
   /** Resolve the editor base URL (local server origin or custom URL). */
@@ -14,6 +15,8 @@ export interface DrawioEditorDeps {
   pngExportScale?(): number;
   /** Persisted defaults for shapes inserted in a newly opened editor. */
   defaultShapeStyle?: DefaultShapeStyle;
+  /** Re-read a native Vault library for this interactive editor (offline only). */
+  loadCommonLibrary?: () => Promise<NativeLibraryEntry[] | null>;
   /** Pin/unpin the local server so it isn't idle-stopped while editing. */
   acquireServer(): void;
   releaseServer(): void;
@@ -41,6 +44,7 @@ export class DrawioEditor {
   private origin = '';
   private acquired = false;
   private destroyed = false;
+  private commonLibrary: NativeLibraryEntry[] | null = null;
   /** The window mount() actually listens on — the container's own window, so a
    * popped-out .drawio tab (a separate Window) still receives the iframe's
    * postMessage replies, which are dispatched on ITS parent window, not the
@@ -74,12 +78,23 @@ export class DrawioEditor {
     // remount/close). Bail out before touching the server or the DOM.
     if (this.destroyed) return;
 
-    this.origin = new URL(base).origin;
-    const q = buildEmbedQuery({ dark: this.deps.isDark(), libraries: this.deps.showLibraries() });
-    const url = `${base}${base.includes('?') ? '&' : '?'}${q}`;
-
+    // Keep the resolved local server alive during an asynchronous library read.
     this.deps.acquireServer();
     this.acquired = true;
+    try {
+      this.commonLibrary = await this.deps.loadCommonLibrary?.() ?? null;
+    } catch (err) {
+      if (this.destroyed) return;
+      new Notice('Drawio: failed to load common shape library — using standard libraries.');
+      console.error('Drawio: failed to load common shape library', err);
+    }
+    if (this.destroyed) return;
+    this.origin = new URL(base).origin;
+    const q = buildEmbedQuery({
+      dark: this.deps.isDark(), libraries: this.deps.showLibraries(),
+      commonLibrary: !!this.commonLibrary?.length,
+    });
+    const url = `${base}${base.includes('?') ? '&' : '?'}${q}`;
 
     this.iframe = this.container.createEl('iframe', { cls: 'drawio-iframe' });
     this.iframe.addEventListener('error', (ev) => console.error('Drawio: editor iframe failed to load', ev));
@@ -120,7 +135,7 @@ export class DrawioEditor {
     switch (ev.event) {
       case 'configure':
         // Sent before init when configure=1. Disable compression → readable XML.
-        this.post(buildConfigureMessage(this.deps.defaultShapeStyle));
+        this.post(buildConfigureMessage(this.deps.defaultShapeStyle, this.commonLibrary));
         break;
       case 'init': {
         let xml: string;

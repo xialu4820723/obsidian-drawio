@@ -52,7 +52,10 @@ describe('exportDiagramXml (headless drawio export)', () => {
 
   it('drives configure → init → load → export and resolves with the data URI', async () => {
     const deps = makeDeps();
+    deps.loadCommonLibrary = vi.fn(async () => { throw new Error('private library must not be read for export'); });
     const { promise, posts, dispatch } = await start('svg', deps);
+    const iframe = document.querySelector<HTMLIFrameElement>('.drawio-headless-exporter iframe')!;
+    expect(new URL(iframe.src).searchParams.has('libs')).toBe(false);
 
     dispatch({ event: 'configure' });
     expect(posts).toContainEqual(JSON.stringify({ action: 'configure', config: { compressXml: false } }));
@@ -67,6 +70,7 @@ describe('exportDiagramXml (headless drawio export)', () => {
 
     dispatch({ event: 'export', format: 'svg', data: SVG_URI });
     await expect(promise).resolves.toBe(SVG_URI);
+    expect(deps.loadCommonLibrary).not.toHaveBeenCalled();
   });
 
   it('uses the same configured shape defaults for image exports', async () => {

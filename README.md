@@ -96,12 +96,15 @@ Phones and tablets behave identically: previews everywhere, no editing. Tapping 
 | **Preview alignment** | Center (default) or left-align rendered previews. |
 | **Follow Obsidian theme** | Match the editor to Obsidian's light/dark theme. |
 | **Show shape libraries** | Toggle the editor's shape panel. |
+| **Common shape library** | Desktop, Offline only: Vault-relative path to a native `<mxlibrary>` `.xml` file (for example `tools/DrawIO/Common.xml`). Re-read on every editor open. Empty restores native library selection; Online and Custom modes ignore it to keep private library content local. |
 | **Default shape corners** | Drawio default (unchanged), Rounded, or Sharp for newly inserted shapes. Reopen the editor to apply; existing shapes are not restyled. |
 | **Default shape fill** | `#RRGGBB` (for example `#F5F5F5`) or `none`. Leave empty to inherit Drawio's default. Saved per vault and applied on the next editor open. |
 | **Server idle timeout** | Stop the local server after this idle period (minimum 5 s). Only relevant in Offline mode. |
 | **Migrate from the old Diagrams plugin** | Desktop: **Scan vault…** lists ordinary `.svg` files with embedded drawio data and, after confirmation, renames them to `.drawio.svg`. |
 
 Shape-library entries with an explicit style keep it: **Rectangle** stays sharp and **Rounded Rectangle** stays rounded. These settings provide defaults, not a forced restyle of every shape. Text-only labels and existing diagrams keep their own appearance.
+
+A valid **Common shape library** starts each new offline editor with the registered **常用** palette; click its heading if collapsed. Native **Scratchpad**, browser preferences and **More Shapes** remain available — this is not a restriction on the full catalog. The file owns the selected components and their saved styles, not a universal theme for existing diagrams. Missing or invalid libraries show a notice and fall back to native libraries. The registered palette does not write edits back to the Vault file: use Drawio's native library editing/export tools and replace that XML, then reopen the editor to load changes. Headless image exports do not read the library.
 
 On mobile, only **Preview alignment** and **Follow Obsidian theme** are shown — the other settings configure the desktop editor.
 

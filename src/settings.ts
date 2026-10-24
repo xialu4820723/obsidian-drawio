@@ -16,6 +16,8 @@ export interface DrawioSettings {
   serverIdleTimeout: number; // seconds
   followObsidianTheme: boolean;
   showLibraries: boolean;
+  /** Vault-relative native mxlibrary XML; empty keeps native library selection. */
+  commonLibraryPath: string;
   /** null / empty string preserve drawio's built-in shape defaults. */
   defaultShapeRounded: boolean | null;
   defaultShapeFillColor: string;
@@ -47,6 +49,7 @@ export const DEFAULT_SETTINGS: DrawioSettings = {
   serverIdleTimeout: 300,
   followObsidianTheme: true,
   showLibraries: true,
+  commonLibraryPath: '',
   defaultShapeRounded: null,
   defaultShapeFillColor: '',
   newDiagramLocation: 'root',

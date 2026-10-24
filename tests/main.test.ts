@@ -16,12 +16,14 @@ describe('persistent shape style settings', () => {
     await plugin.loadSettings();
     expect(plugin.settings.defaultShapeRounded).toBeNull();
     expect(plugin.settings.defaultShapeFillColor).toBe('');
+    expect(plugin.settings.commonLibraryPath).toBe('');
   });
 
   it('loads saved defaults and forwards them to every editor surface', async () => {
     const plugin = new DrawioPlugin({} as never, {} as never);
     plugin.loadData = async () => ({
       defaultShapeRounded: true, defaultShapeFillColor: '#F5F5F5',
+      commonLibraryPath: 'tools/DrawIO/常用组件.xml',
     });
     await plugin.loadSettings();
     expect(plugin.editorDeps().defaultShapeStyle).toEqual({
@@ -31,7 +33,8 @@ describe('persistent shape style settings', () => {
     plugin.saveData = saved;
     await plugin.saveSettings();
     expect(saved).toHaveBeenCalledWith({ ...DEFAULT_SETTINGS,
-      defaultShapeRounded: true, defaultShapeFillColor: '#F5F5F5' });
+      defaultShapeRounded: true, defaultShapeFillColor: '#F5F5F5',
+      commonLibraryPath: 'tools/DrawIO/常用组件.xml' });
   });
 });
 

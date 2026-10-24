@@ -152,14 +152,25 @@ export default class DrawioPlugin extends Plugin {
   /** Shared deps for any DrawioEditor surface (modal or inline file view).
    * Only ever consumed by desktop-only entry points (see Global Constraints). */
   editorDeps(): DrawioEditorDeps {
+    // Bind library permission to the mode that resolved this iframe's URL, not
+    // a later settings change while an async mount is still in flight.
+    let offlineEditor = false;
     return {
-      resolveBaseUrl: () => this.resolveBaseUrl(),
+      resolveBaseUrl: () => {
+        offlineEditor = this.settings.drawioMode === 'offline';
+        return this.resolveBaseUrl();
+      },
       isDark: () => this.settings.followObsidianTheme && this.isDark(),
       showLibraries: () => this.settings.showLibraries,
       pngExportScale: () => this.settings.pngExportScale,
       defaultShapeStyle: {
         defaultShapeRounded: this.settings.defaultShapeRounded,
         defaultShapeFillColor: this.settings.defaultShapeFillColor,
+      },
+      loadCommonLibrary: async () => {
+        if (!Platform.isDesktopApp || !offlineEditor || !this.settings.commonLibraryPath) return null;
+        const { readCommonLibrary } = await import('./desktop/commonLibrary');
+        return readCommonLibrary(this.app.vault.adapter, this.settings.commonLibraryPath);
       },
       acquireServer: () => this.server!.acquire(),
       releaseServer: () => this.server!.release(),

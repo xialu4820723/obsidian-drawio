@@ -102,6 +102,29 @@ describe('DrawioSettingTab', () => {
     expect(saveSettings).toHaveBeenCalledTimes(5);
   });
 
+  it('saves a single Vault-relative common library path and can clear it', () => {
+    Platform.isDesktopApp = true;
+    const saveSettings = vi.fn(async () => {});
+    const plugin = fakePlugin({ saveSettings });
+    const tab = new DrawioSettingTab({} as never, plugin);
+    tab.display();
+    const row = Array.from(tab.containerEl.querySelectorAll('.setting-item'))
+      .find((el) => el.querySelector('.setting-item-name')?.textContent === 'Common shape library');
+    expect(row).toBeDefined();
+    expect(row!.textContent).toContain('Offline');
+    expect(row!.textContent).toContain('Online');
+    expect(row!.textContent).toContain('Custom');
+    const input = row!.querySelector('input')!;
+    expect(input.value).toBe('');
+    input.value = 'tools/DrawIO/常用组件.xml';
+    input.dispatchEvent(new Event('input'));
+    expect(plugin.settings.commonLibraryPath).toBe('tools/DrawIO/常用组件.xml');
+    input.value = '';
+    input.dispatchEvent(new Event('input'));
+    expect(plugin.settings.commonLibraryPath).toBe('');
+    expect(saveSettings).toHaveBeenCalledTimes(2);
+  });
+
   it('hides the editor-only rows on mobile, keeps preview/theme rows', () => {
     Platform.isDesktopApp = false;
     const tab = new DrawioSettingTab({} as never, fakePlugin());
@@ -113,6 +136,7 @@ describe('DrawioSettingTab', () => {
     expect(names).not.toContain('Show shape libraries');
     expect(names).not.toContain('Default shape corners');
     expect(names).not.toContain('Default shape fill');
+    expect(names).not.toContain('Common shape library');
     expect(names).not.toContain('New diagram location');
     expect(names).not.toContain('New diagram folder');
     expect(names).not.toContain('Open diagram files read-only');

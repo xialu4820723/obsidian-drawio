@@ -7,6 +7,7 @@ describe('DEFAULT_SETTINGS', () => {
     // change first-run behavior for every install.
     expect(DEFAULT_SETTINGS.drawioMode).toBe('offline');
     expect(DEFAULT_SETTINGS.customDrawioUrl).toBe('');
+    expect(DEFAULT_SETTINGS.commonLibraryPath).toBe('');
   });
 
   it('defines a valid, non-empty local server port range', () => {
@@ -44,6 +45,7 @@ describe('DEFAULT_SETTINGS', () => {
     expect(Object.keys(DEFAULT_SETTINGS).sort()).toEqual(
       [
         'customDrawioUrl',
+        'commonLibraryPath',
         'defaultShapeRounded',
         'defaultShapeFillColor',
         'drawioMode',
