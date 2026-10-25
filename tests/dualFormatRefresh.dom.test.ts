@@ -36,9 +36,12 @@ function embed(container: HTMLElement, path: string, targetPath = path) {
 function setup(leaves: Array<{ view: unknown }>, resolve: (path: string, source: string) => TFile | null) {
   let modify: (changed: TFile) => void = () => {};
   const ref = {};
+  const files = new Map<string, TFile>();
+  const getAbstractFileByPath = vi.fn((path: string) => files.get(path) ?? null);
   const getResourcePath = vi.fn((f: TFile) => resourcePath(f.path, f.stat.mtime));
   const getFirstLinkpathDest = vi.fn(resolve);
   const registerEvent = vi.fn();
+  const cleanups: Array<() => void> = [];
   const plugin = {
     app: {
       vault: {
@@ -47,20 +50,111 @@ function setup(leaves: Array<{ view: unknown }>, resolve: (path: string, source:
           modify = callback;
           return ref;
         }),
+        getAbstractFileByPath,
         getResourcePath,
       },
-      workspace: { iterateAllLeaves: (cb: (leaf: unknown) => void) => leaves.forEach(cb) },
+      workspace: {
+        iterateAllLeaves: (cb: (leaf: unknown) => void) => leaves.forEach(cb),
+        on: vi.fn(() => ({})),
+        containerEl: document.body,
+      },
       metadataCache: { getFirstLinkpathDest },
     },
     registerEvent,
+    register: (cleanup: () => void) => cleanups.push(cleanup),
   } as unknown as DrawioPlugin;
   registerDualFormatRefresh(plugin);
-  return { emit: (changed: TFile) => modify(changed), getResourcePath, getFirstLinkpathDest, registerEvent, ref };
+  const dispose = () => cleanups.forEach(cleanup => cleanup());
+  disposers.push(dispose);
+  return {
+    emit: (changed: TFile) => { files.set(changed.path, changed); modify(changed); },
+    files, getAbstractFileByPath, getResourcePath, getFirstLinkpathDest, registerEvent, ref, dispose,
+  };
 }
 
-afterEach(() => { document.body.replaceChildren(); });
+const disposers: Array<() => void> = [];
+afterEach(() => { disposers.splice(0).forEach(dispose => dispose()); document.body.replaceChildren(); });
 
 describe('dual-format native image refresh', () => {
+  it('skips a deleted resource and uses the current file when its path is recreated', async () => {
+    const target = file('attachments/diagram.drawio.svg');
+    const leaf = markdownLeaf('notes/source.md');
+    const image = embed(leaf.view.containerEl, target.path);
+    const { emit, files } = setup([leaf], () => target);
+    emit(target);
+    await new Promise(resolve => window.setTimeout(resolve, 0));
+
+    files.delete(target.path);
+    image.src = resourcePath(target.path);
+    await new Promise(resolve => window.setTimeout(resolve, 0));
+    expect(image.src).toBe(resourcePath(target.path));
+    expect(image.decode).toHaveBeenCalledOnce();
+
+    const replacement = file(target.path, 3);
+    files.set(replacement.path, replacement);
+    image.src = resourcePath(replacement.path);
+    await new Promise(resolve => window.setTimeout(resolve, 0));
+    expect(image.src).toBe(resourcePath(replacement.path, 3));
+    expect(image.decode).toHaveBeenCalledTimes(2);
+  });
+
+  it('does not restore an old mtime when a renamed resource path is reused', async () => {
+    const target = file('attachments/diagram.drawio.svg');
+    const originalPath = target.path;
+    const leaf = markdownLeaf('notes/source.md');
+    const image = embed(leaf.view.containerEl, originalPath);
+    const { emit, files } = setup([leaf], () => target);
+    emit(target);
+    await new Promise(resolve => window.setTimeout(resolve, 0));
+
+    files.delete(originalPath);
+    target.path = 'attachments/renamed.drawio.svg';
+    files.set(target.path, target);
+    const replacement = file(originalPath, 3);
+    files.set(originalPath, replacement);
+    image.src = resourcePath(originalPath, 3);
+    await new Promise(resolve => window.setTimeout(resolve, 0));
+
+    expect(image.src).toBe(resourcePath(originalPath, 3));
+    expect(image.decode).toHaveBeenCalledOnce();
+  });
+
+  it('refreshes an image reattached after a save without a second modify event', async () => {
+    const target = file('attachments/diagram.drawio.svg');
+    const leaf = markdownLeaf('notes/source.md');
+    const image = embed(leaf.view.containerEl, target.path);
+    const wrapper = image.parentElement!;
+    wrapper.remove();
+    const { emit } = setup([leaf], () => target);
+
+    emit(target);
+    expect(image.src).toBe(resourcePath(target.path));
+    leaf.view.containerEl.appendChild(wrapper);
+    await new Promise(resolve => window.setTimeout(resolve, 0));
+
+    expect(image.src).toBe(resourcePath(target.path, 2));
+    expect(image.decode).toHaveBeenCalledOnce();
+  });
+
+  it('corrects a recycled image src and stops observing on unload', async () => {
+    const target = file('attachments/diagram.drawio.svg');
+    const leaf = markdownLeaf('notes/source.md');
+    const image = embed(leaf.view.containerEl, target.path);
+    const { emit, dispose } = setup([leaf], () => target);
+    emit(target);
+    await new Promise(resolve => window.setTimeout(resolve, 0));
+    image.src = resourcePath(target.path);
+    await new Promise(resolve => window.setTimeout(resolve, 0));
+    expect(image.src).toBe(resourcePath(target.path, 2));
+    expect(image.decode).toHaveBeenCalledTimes(2);
+
+    dispose();
+    image.src = resourcePath(target.path);
+    await new Promise(resolve => window.setTimeout(resolve, 0));
+    expect(image.src).toBe(resourcePath(target.path));
+    expect(image.decode).toHaveBeenCalledTimes(2);
+  });
+
   it('refreshes only matching mounted resources, including popout documents', () => {
     const target = file('a/diagram.drawio.png');
     const main = markdownLeaf('b/note.md');
@@ -84,7 +178,7 @@ describe('dual-format native image refresh', () => {
     expect(popoutImage.decode).toHaveBeenCalledTimes(2);
     expect(mainImage.src).toBe(resourcePath('b/diagram.drawio.png'));
     expect(detachedImage.src).toBe(resourcePath(target.path));
-    expect(getResourcePath).toHaveBeenCalledTimes(2);
+    expect(getResourcePath).toHaveBeenCalledTimes(4);
   });
 
   it.each(['host', 'child'])('refreshes only the %s image across a nested transclusion with the same filename', (changed) => {
