@@ -171,3 +171,5 @@ Bug reports and pull requests are welcome — please open an [issue](https://git
 ## License
 
 [MIT](LICENSE)
+
+Closing the diagram editing modal returns keyboard focus to the originating note if it is still active.
