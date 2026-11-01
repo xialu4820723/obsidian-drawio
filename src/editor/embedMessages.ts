@@ -6,6 +6,7 @@ export type DrawioEvent =
   | { event: 'save'; xml: string; exit?: boolean }
   | { event: 'autosave'; xml: string }
   | { event: 'exit'; modified?: boolean }
+  | { event: 'shortcut'; command: string }
   | { event: 'export'; data: string; xml?: string; format?: string }
   | { event: 'configure' };
 
@@ -33,7 +34,7 @@ export interface DefaultShapeStyle {
   defaultShapeFillColor?: string;
 }
 
-export function buildConfigureMessage(style: DefaultShapeStyle = {}, commonLibrary?: NativeLibraryEntry[] | null): string {
+export function buildConfigureMessage(style: DefaultShapeStyle = {}, commonLibrary?: NativeLibraryEntry[] | null, closeOnEscape = false): string {
   const defaultVertexStyle: Record<string, string> = {};
   if (typeof style.defaultShapeRounded === 'boolean') {
     defaultVertexStyle.rounded = style.defaultShapeRounded ? '1' : '0';
@@ -44,6 +45,7 @@ export function buildConfigureMessage(style: DefaultShapeStyle = {}, commonLibra
     action: 'configure',
     config: {
       compressXml: false,
+      ...(closeOnEscape ? { passThroughKeys: [{ key: 'Escape', command: 'drawio-close' }] } : {}),
       ...(Object.keys(defaultVertexStyle).length ? { defaultVertexStyle } : {}),
       ...(commonLibrary?.length ? {
         defaultLibraries: 'obsidian-common',

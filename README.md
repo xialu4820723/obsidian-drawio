@@ -44,6 +44,8 @@ Code blocks and `.drawio` embeds render as SVG previews in both editing and read
 
 Dual-format SVG/PNG images refresh in place after a save, without switching notes. Native image resize handles and action buttons do not open the diagram editor; resizing is separate from clicking the image to edit it.
 
+Press **Esc** in the diagram editing modal to save and return to the note. An active label edit is committed first; if saving fails, the editor stays open so you can retry. This shortcut does not close standalone diagram tabs.
+
 **Creating directly in a note (desktop):** run **Create and insert diagram** from a Markdown editor. It uses **New diagram location** and **New diagram format**, inserts an embed at the cursor (or after the selection, without replacing it), then opens the diagram editor. The link follows Obsidian's link settings and stays in the note even if you close the diagram editor without editing. Undo in the note removes the insertion; the diagram file is kept. **Create new diagram**, the ribbon button and the folder menu still create standalone files without inserting anything into a note.
 
 **Clicking a preview (desktop):** **Settings → Drawio → Preview click action** chooses what a click does:
