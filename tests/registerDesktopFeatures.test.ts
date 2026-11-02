@@ -8,6 +8,7 @@ vi.mock('obsidian', async (importOriginal) => {
 import { FileSystemAdapter, Notice, TFile } from 'obsidian';
 import type { Editor, MarkdownFileInfo } from 'obsidian';
 import { registerDesktopFeatures } from '../src/desktop/registerDesktopFeatures';
+import * as creation from '../src/file/createDiagram';
 import { DRAWIO_VERSION } from '../src/constants';
 import type DrawioPlugin from '../src/main';
 
@@ -124,31 +125,19 @@ describe('registerDesktopFeatures', () => {
     expect(check(true, editor, { file: null } as MarkdownFileInfo)).toBe(false);
     expect(check(true, editor, { file: tfile('image.drawio.svg') } as MarkdownFileInfo)).toBe(false);
     expect(check(true, editor, { file: tfile('note.md') } as MarkdownFileInfo)).toBe(true);
-    // Availability checks must not create a file or read the cursor.
+    // Availability checks must not read the active file.
     expect(raw.app.workspace.getActiveFile).not.toHaveBeenCalled();
 
-    const events: string[] = [];
-    const file = tfile('Untitled Diagram 123.drawio');
-    const create = vi.fn(async () => { events.push('create'); return file; });
-    const openFile = vi.fn(async () => { events.push('open'); });
-    const generateMarkdownLink = vi.fn(() => `[[${file.path}]]`);
-    Object.assign(raw.settings, {
-      newDiagramLocation: 'root', newDiagramFormat: 'drawio',
-    });
-    Object.assign(raw.app.vault, { create });
-    Object.assign(raw.app, { fileManager: { generateMarkdownLink } });
-    Object.assign(raw.app.workspace, { getLeaf: () => ({ openFile }) });
-    const replaceRange = vi.fn(() => { events.push('insert'); });
-    const sourceEditor = {
-      getCursor: vi.fn(() => ({ line: 2, ch: 4 })), replaceRange,
-    } as unknown as Editor;
-    const note = tfile('Notes/note.md');
-    check(false, sourceEditor, { file: note, editor: sourceEditor } as MarkdownFileInfo);
-    await vi.waitFor(() => expect(openFile).toHaveBeenCalledWith(file));
-    expect(generateMarkdownLink).toHaveBeenCalledWith(file, note.path);
-    expect(sourceEditor.getCursor).toHaveBeenCalledWith('to');
-    expect(replaceRange).toHaveBeenCalledWith(`\n![[${file.path}]]\n`, { line: 2, ch: 4 });
-    expect(events).toEqual(['create', 'insert', 'open']);
+    const create = vi.spyOn(creation, 'createAndInsertDiagram').mockResolvedValue(undefined);
+    try {
+      const context = { file: tfile('Notes/note.md'), editor } as MarkdownFileInfo;
+      check(true, editor, context);
+      expect(create).not.toHaveBeenCalled();
+      check(false, editor, context);
+      expect(create.mock.calls).toEqual([[plugin, editor, context]]);
+    } finally {
+      create.mockRestore();
+    }
   });
 
   it('adds the ribbon icon', async () => {

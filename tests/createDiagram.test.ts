@@ -62,20 +62,15 @@ function creationFixture() {
   const files = new Map<string, TFile | TFolder>();
   const created: Array<{ file: TFile; data: string | ArrayBuffer }> = [];
   const events: string[] = [];
-  const create = vi.fn(async (path: string, data: string) => {
+  const store = async (path: string, data: string | ArrayBuffer) => {
     const file = diagramFile(path);
     files.set(path, file);
     created.push({ file, data });
     events.push('create');
     return file;
-  });
-  const createBinary = vi.fn(async (path: string, data: ArrayBuffer) => {
-    const file = diagramFile(path);
-    files.set(path, file);
-    created.push({ file, data });
-    events.push('create');
-    return file;
-  });
+  };
+  const create = vi.fn((path: string, data: string) => store(path, data));
+  const createBinary = vi.fn((path: string, data: ArrayBuffer) => store(path, data));
   const createFolder = vi.fn(async (path: string) => {
     files.set(path, Object.assign(new TFolder(), { path }));
     events.push(`folder:${path}`);
