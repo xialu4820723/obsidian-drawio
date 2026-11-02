@@ -33,13 +33,13 @@ function embed(container: HTMLElement, path: string, targetPath = path) {
   return img;
 }
 
-function setup(leaves: Array<{ view: unknown }>, resolve: (path: string, source: string) => TFile | null) {
+function setup(leaves: Array<{ view: unknown }>) {
   let modify: (changed: TFile) => void = () => {};
   const ref = {};
   const files = new Map<string, TFile>();
   const getAbstractFileByPath = vi.fn((path: string) => files.get(path) ?? null);
   const getResourcePath = vi.fn((f: TFile) => resourcePath(f.path, f.stat.mtime));
-  const getFirstLinkpathDest = vi.fn(resolve);
+  const getFirstLinkpathDest = vi.fn();
   const registerEvent = vi.fn();
   const cleanups: Array<() => void> = [];
   const plugin = {
@@ -80,7 +80,7 @@ describe('dual-format native image refresh', () => {
     const target = file('attachments/diagram.drawio.svg');
     const leaf = markdownLeaf('notes/source.md');
     const image = embed(leaf.view.containerEl, target.path);
-    const { emit, files } = setup([leaf], () => target);
+    const { emit, files } = setup([leaf]);
     emit(target);
     await new Promise(resolve => window.setTimeout(resolve, 0));
 
@@ -103,7 +103,7 @@ describe('dual-format native image refresh', () => {
     const originalPath = target.path;
     const leaf = markdownLeaf('notes/source.md');
     const image = embed(leaf.view.containerEl, originalPath);
-    const { emit, files } = setup([leaf], () => target);
+    const { emit, files } = setup([leaf]);
     emit(target);
     await new Promise(resolve => window.setTimeout(resolve, 0));
 
@@ -125,7 +125,7 @@ describe('dual-format native image refresh', () => {
     const image = embed(leaf.view.containerEl, target.path);
     const wrapper = image.parentElement!;
     wrapper.remove();
-    const { emit } = setup([leaf], () => target);
+    const { emit } = setup([leaf]);
 
     emit(target);
     expect(image.src).toBe(resourcePath(target.path));
@@ -140,7 +140,7 @@ describe('dual-format native image refresh', () => {
     const target = file('attachments/diagram.drawio.svg');
     const leaf = markdownLeaf('notes/source.md');
     const image = embed(leaf.view.containerEl, target.path);
-    const { emit, dispose } = setup([leaf], () => target);
+    const { emit, dispose } = setup([leaf]);
     emit(target);
     await new Promise(resolve => window.setTimeout(resolve, 0));
     image.src = resourcePath(target.path);
@@ -166,8 +166,7 @@ describe('dual-format native image refresh', () => {
     const detached = markdownLeaf('a/closed.md');
     const detachedImage = embed(detached.view.containerEl, 'diagram.drawio.png', target.path);
     detached.view.containerEl.remove();
-    const { emit, getResourcePath } = setup([main, popout, detached], (_path, source) =>
-      source.startsWith('a/') ? target : file('b/diagram.drawio.png'));
+    const { emit, getResourcePath } = setup([main, popout, detached]);
 
     emit(target);
     target.stat.mtime = 3;
@@ -191,7 +190,7 @@ describe('dual-format native image refresh', () => {
     transclusion.setAttribute('src', 'child/Child.md');
     leaf.view.containerEl.appendChild(transclusion);
     const childImage = embed(transclusion, 'Diagram.drawio.svg', child.path);
-    const { emit } = setup([leaf], (_path, source) => source === 'host/Host.md' ? host : child);
+    const { emit } = setup([leaf]);
 
     emit(changed === 'host' ? host : child);
 
@@ -207,7 +206,7 @@ describe('dual-format native image refresh', () => {
     const image = embed(leaf.view.containerEl, target.path);
     image.src = `${resourcePath(target.path)}#page-2`;
     const other = embed(leaf.view.containerEl, 'Design.drawio.svg', 'attachments/Design.drawio.svg');
-    const { emit, getFirstLinkpathDest } = setup([leaf], () => null);
+    const { emit, getFirstLinkpathDest } = setup([leaf]);
 
     emit(target);
 
@@ -219,34 +218,29 @@ describe('dual-format native image refresh', () => {
     expect(getFirstLinkpathDest).not.toHaveBeenCalled();
   });
 
-  it('ignores ordinary image, Markdown, and plain drawio modifications', () => {
-    const leaf = markdownLeaf('note.md');
-    const image = embed(leaf.view.containerEl, 'diagram.drawio.svg');
-    const { emit, getResourcePath, getFirstLinkpathDest } = setup([leaf], () => null);
-
-    for (const path of ['note.md', 'photo.svg', 'photo.png', 'diagram.drawio']) emit(file(path));
-
-    expect(image.src).toBe(resourcePath('diagram.drawio.svg'));
-    expect(getResourcePath).not.toHaveBeenCalled();
-    expect(getFirstLinkpathDest).not.toHaveBeenCalled();
-  });
-
-  it('does not refresh arbitrary images outside dual-format embeds, even with a matching resource', () => {
+  it('ignores unrelated modifications and images outside dual-format embeds', () => {
     const target = file('attachments/diagram.drawio.svg');
     const leaf = markdownLeaf('notes/source.md');
+    const image = embed(leaf.view.containerEl, target.path);
     const plainImage = document.createElement('img');
     plainImage.src = resourcePath(target.path);
     plainImage.decode = vi.fn(async () => {});
     leaf.view.containerEl.appendChild(plainImage);
     const ordinaryEmbed = embed(leaf.view.containerEl, 'photo.svg', target.path);
-    const { emit } = setup([leaf], () => target);
+    const { emit, getResourcePath, getFirstLinkpathDest } = setup([leaf]);
+
+    for (const path of ['note.md', 'photo.svg', 'photo.png', 'diagram.drawio']) emit(file(path));
+    expect(image.src).toBe(resourcePath(target.path));
+    expect(getResourcePath).not.toHaveBeenCalled();
 
     emit(target);
 
+    expect(image.src).toBe(resourcePath(target.path, 2));
     expect(plainImage.src).toBe(resourcePath(target.path));
     expect(ordinaryEmbed.src).toBe(resourcePath(target.path));
     expect(plainImage.decode).not.toHaveBeenCalled();
     expect(ordinaryEmbed.decode).not.toHaveBeenCalled();
+    expect(getFirstLinkpathDest).not.toHaveBeenCalled();
   });
 
   it('refreshes matching standalone native image views, leaving other image views alone', () => {
@@ -262,7 +256,7 @@ describe('dual-format native image refresh', () => {
     }
     const matching = imageLeaf(target.path);
     const other = imageLeaf('attachments/other.drawio.png');
-    const { emit } = setup([matching, other], () => null);
+    const { emit } = setup([matching, other]);
 
     emit(target);
 
@@ -289,8 +283,7 @@ describe('dual-format native image refresh', () => {
     leaf.view.containerEl.scrollTop = 41;
     const children = Array.from(leaf.view.containerEl.childNodes);
     const sourceBefore = leaf.view.containerEl.textContent;
-    const { emit, registerEvent, ref } = setup([leaf], (path, source) =>
-      path === '../attachments/diagram.drawio.svg' && source === 'notes/source.md' ? target : null);
+    const { emit, registerEvent, ref } = setup([leaf]);
 
     emit(target);
 

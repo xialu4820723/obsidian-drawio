@@ -93,13 +93,17 @@ export function registerDualFormatOpen(plugin: DrawioPlugin): void {
     plugin.registerDomEvent(doc, 'pointerdown', onDown, { capture: true });
     plugin.registerDomEvent(doc, 'mousedown', onDown, { capture: true });
     plugin.registerDomEvent(doc, 'pointercancel', () => { resizing = false; }, { capture: true });
+    if (doc.defaultView) {
+      plugin.registerDomEvent(doc.defaultView, 'blur', () => { resizing = false; });
+    }
     plugin.registerDomEvent(doc, 'click', (event: MouseEvent) => {
-      if (resizing) {
+      if (resizing && event.detail > 0) {
         resizing = false;
         event.preventDefault();
         event.stopImmediatePropagation();
         return;
       }
+      resizing = false;
       handleDualFormatEmbedClick(plugin, event);
     }, { capture: true });
   };
